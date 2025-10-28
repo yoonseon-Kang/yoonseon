@@ -13,6 +13,7 @@ export const LoginPage: React.FC = () => {
       <p className="text-neutral-600 text-center mb-12">
         구글 계정으로 간편하게 시작하세요
       </p>
+
       <LoginForm />
     </div>
   );

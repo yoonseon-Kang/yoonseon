@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { MealCard, Meal } from '../features/meals/components/MealCard';
 import { AddMealModal } from '../features/meals/components/AddMealModal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { NutritionChart } from '../features/meals/components/NutritionChart';
 import { useMeals } from '../features/meals/hooks/useMeals';
 
 const getPeriodFromTime = (time: string): string => {
@@ -23,14 +25,35 @@ const itemVariants = {
 };
 
 export const MealsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [mealToDelete, setMealToDelete] = useState<Meal | null>(null);
-  const { getMealsByDate, deleteMeal, updateMeal } = useMeals();
+  const { getMealsByDate, deleteMeal, updateMeal, hasMealsOnDate } = useMeals();
+
+  // URL 파라미터에서 날짜를 가져와서 selectedDate 설정
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const [year, month, day] = dateParam.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+        setSelectedDate(date);
+      }
+    }
+  }, [searchParams]);
+
+  // Date를 YYYY-MM-DD 문자열로 변환 (타임존 문제 방지)
+  const formatDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const selectedDateMeals = getMealsByDate(selectedDate);
-  
+
   // 어제 날짜의 식사 기록 가져오기
   const yesterday = new Date(selectedDate);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -117,8 +140,11 @@ export const MealsPage: React.FC = () => {
         <div className="flex items-center gap-4">
           <input
             type="date"
-            value={selectedDate.toISOString().split('T')[0]}
-            onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            value={formatDateString(selectedDate)}
+            onChange={(e) => {
+              const [year, month, day] = e.target.value.split('-').map(Number);
+              setSelectedDate(new Date(year, month - 1, day));
+            }}
             className="flex-1 p-3 border border-gray-200 rounded-lg"
           />
           <button
@@ -129,6 +155,19 @@ export const MealsPage: React.FC = () => {
           </button>
         </div>
       </motion.div>
+
+      {/* 선택한 날짜의 영양 차트 */}
+      {selectedDateMeals.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-6"
+        >
+          <NutritionChart meals={selectedDateMeals} date={selectedDate} />
+        </motion.div>
+      )}
+
 
       <AnimatePresence>
         <motion.div className="space-y-6">
@@ -173,6 +212,8 @@ export const MealsPage: React.FC = () => {
             </div>
           </motion.div>
 
+
+
           {/* 어제의 식사 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -214,43 +255,8 @@ export const MealsPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* 식사 추가 버튼 */}
-          {selectedDateMeals.length === 0 && yesterdayMeals.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-              className="bg-white rounded-lg shadow-sm p-8 text-center"
-            >
-              <div className="flex flex-col items-center gap-4">
-                <svg 
-                  className="w-16 h-16 text-gray-300" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={1.5} 
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" 
-                  />
-                </svg>
-                <h3 className="text-lg font-medium text-gray-900">
-                  기록된 식사가 없습니다
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {formatDate(selectedDate)}의 기록된 식사가 없습니다. 새로운 식사를 추가해보세요.
-                </p>
-                <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                >
-                  식사 추가하기
-                </button>
-              </div>
-            </motion.div>
-          )}
+
+
         </motion.div>
       </AnimatePresence>
 

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { useMeals } from '../features/meals/hooks/useMeals';
 
 export const CalendarPage = () => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const { getMealsByDate, hasMealsOnDate } = useMeals();
 
   // 현재 월의 시작일과 마지막일
   const monthStart = startOfMonth(currentDate);
@@ -41,18 +45,13 @@ export const CalendarPage = () => {
     setSelectedDate(date);
   };
 
-  // 샘플 데이터 (실제로는 API에서 가져올 데이터)
-  const getMealsForDate = (date: Date) => {
-    // 샘플 데이터 - 실제로는 API에서 가져올 데이터
-    const sampleMeals: { [key: string]: string[] } = {
-      '2024-01-15': ['아침: 오트밀', '점심: 샐러드', '저녁: 닭가슴살'],
-      '2024-01-20': ['아침: 토스트', '점심: 파스타'],
-      '2024-01-25': ['아침: 계란', '점심: 김치찌개', '저녁: 불고기']
-    };
-    
-    const dateKey = format(date, 'yyyy-MM-dd');
-    return sampleMeals[dateKey] || [];
+  // 식사 클릭 핸들러 - meals 페이지로 이동하며 해당 날짜를 선택
+  const handleMealClick = (date: Date) => {
+    // 선택된 날짜를 URL 파라미터로 전달
+    const dateString = format(date, 'yyyy-MM-dd');
+    navigate(`/meals?date=${dateString}`);
   };
+
 
   return (
     <div className="p-4 max-w-lg mx-auto">
@@ -104,8 +103,7 @@ export const CalendarPage = () => {
           const isCurrentMonth = isSameMonth(date, currentDate);
           const isToday = isSameDay(date, new Date());
           const isSelected = selectedDate && isSameDay(date, selectedDate);
-          const meals = getMealsForDate(date);
-          const hasMeals = meals.length > 0;
+          const hasMeals = hasMealsOnDate(date);
 
           return (
             <button
@@ -114,10 +112,9 @@ export const CalendarPage = () => {
               className={`
                 relative h-12 text-sm rounded-lg transition-colors
                 ${isCurrentMonth ? 'text-neutral-900' : 'text-neutral-400'}
-                ${isToday ? 'bg-primary-100 text-emerald-700 font-bold' : ''}
+                ${isToday ? 'bg-emerald-100 text-emerald-700 font-bold' : ''}
                 ${isSelected ? 'bg-emerald-500 text-white' : ''}
                 ${!isSelected && !isToday ? 'hover:bg-neutral-100' : ''}
-                ${hasMeals ? 'ring-2 ring-primary-200' : ''}
               `}
             >
               {format(date, 'd')}
@@ -137,12 +134,23 @@ export const CalendarPage = () => {
           <h3 className="text-lg font-semibold text-neutral-900 mb-3">
             {format(selectedDate, 'M월 d일 (E)', { locale: ko })} 식사 기록
           </h3>
-          {getMealsForDate(selectedDate).length > 0 ? (
+          {getMealsByDate(selectedDate).length > 0 ? (
             <div className="space-y-2">
-              {getMealsForDate(selectedDate).map((meal: string, index: number) => (
-                <div key={index} className="flex items-center p-2 bg-white rounded-lg shadow-sm">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></div>
-                  <span className="text-neutral-700">{meal}</span>
+              {getMealsByDate(selectedDate).map((meal) => (
+                <div
+                  key={meal.id}
+                  onClick={() => handleMealClick(selectedDate)}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></div>
+                    <div>
+                      <span className="text-neutral-900 font-medium">{meal.name}</span>
+                      <div className="text-sm text-neutral-500">
+                        {meal.amount}g · {meal.calories}kcal
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

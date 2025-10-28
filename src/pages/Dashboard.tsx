@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { useUser } from '../contexts/UserContext';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -63,6 +64,7 @@ const fetchDashboardData = async () => {
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { userInfo } = useUser();
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -166,7 +168,7 @@ export const DashboardPage: React.FC = () => {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg">내 근처 가맹점</CardTitle>
-              <span className="text-sm text-gray-500">서울 서대문구</span>
+              <span className="text-sm text-gray-500">{userInfo.address || '거주지 미설정'}</span>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -175,23 +177,26 @@ export const DashboardPage: React.FC = () => {
                 {
                   id: 1,
                   name: '키즈 키친',
-                  distance: '0.3km',
                   address: '서대문구 연희동 123-45',
-                  tel: '02-1234-5678'
+                  tel: '02-1234-5678',
+                  district: '서대문구',
+                  dong: '연희동'
                 },
                 {
                   id: 2,
                   name: '영양만점 식당',
-                  distance: '0.5km',
                   address: '서대문구 창천동 56-78',
-                  tel: '02-2345-6789'
+                  tel: '02-2345-6789',
+                  district: '서대문구',
+                  dong: '창천동'
                 },
                 {
                   id: 3,
                   name: '성장맘 레스토랑',
-                  distance: '0.7km',
                   address: '서대문구 대현동 90-12',
-                  tel: '02-3456-7890'
+                  tel: '02-3456-7890',
+                  district: '서대문구',
+                  dong: '대현동'
                 }
               ].map((store) => (
                 <motion.div
@@ -209,9 +214,14 @@ export const DashboardPage: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium text-gray-900">{store.name}</h3>
-                      <span className="text-sm font-medium text-emerald-600">
-                        {store.distance}
-                      </span>
+                      <div className="flex space-x-1">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {store.district}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {store.dong}
+                        </span>
+                      </div>
                     </div>
                     <div className="mt-1 space-y-1">
                       <p className="text-xs text-gray-500">{store.address}</p>

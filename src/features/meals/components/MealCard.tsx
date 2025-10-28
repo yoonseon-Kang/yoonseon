@@ -36,6 +36,7 @@ export type Meal = {
   protein: number;
   carbs: number;
   fat: number;
+  sugar?: number;
   sodium?: number;
   cholesterol?: number;
   saturatedFat?: number;
@@ -108,7 +109,6 @@ export const MealCard: React.FC<MealCardProps> = ({
             )}
           </div>
           <div>
-            <span className={`text-sm ${accentColor} block`}>{meal.time}</span>
             <h3 className="font-medium text-gray-900">{meal.name}</h3>
             <span className="text-sm text-gray-500">{meal.amount}g · {meal.calories}kcal</span>
           </div>
@@ -194,48 +194,56 @@ export const MealCard: React.FC<MealCardProps> = ({
                 </div>
               </div>
               <div className="divide-y divide-gray-200">
-                <NutrientRow 
-                  label="탄수화물" 
-                  amount={`${meal.carbs}g`} 
-                  percentage={Math.round((meal.carbs * 4) / 2000 * 100) + '%'}
+                <NutrientRow
+                  label="탄수화물"
+                  amount={`${meal.carbs}g`}
+                  percentage="4%"
                 />
-                <NutrientRow 
-                  label="단백질" 
+                {meal.sugar !== undefined && (
+                  <NutrientRow
+                    label="당류"
+                    amount={`${meal.sugar}g`}
+                    percentage="2%"
+                    indent
+                  />
+                )}
+                <NutrientRow
+                  label="단백질"
                   amount={`${meal.protein}g`}
-                  percentage={Math.round((meal.protein * 4) / 2000 * 100) + '%'}
+                  percentage="4%"
                 />
-                <NutrientRow 
-                  label="지방" 
+                <NutrientRow
+                  label="지방"
                   amount={`${meal.fat}g`}
-                  percentage={Math.round((meal.fat * 9) / 2000 * 100) + '%'}
+                  percentage="5%"
                 />
                 {meal.saturatedFat !== undefined && (
-                  <NutrientRow 
-                    label="포화지방" 
+                  <NutrientRow
+                    label="포화지방"
                     amount={`${meal.saturatedFat}g`}
-                    percentage={Math.round((meal.saturatedFat * 9) / 2000 * 100) + '%'}
+                    percentage="5%"
                     indent
                   />
                 )}
                 {meal.transFat !== undefined && (
-                  <NutrientRow 
-                    label="트랜스지방" 
+                  <NutrientRow
+                    label="트랜스지방"
                     amount={`${meal.transFat}g`}
                     indent
                   />
                 )}
                 {meal.cholesterol !== undefined && (
-                  <NutrientRow 
-                    label="콜레스테롤" 
+                  <NutrientRow
+                    label="콜레스테롤"
                     amount={`${meal.cholesterol}mg`}
-                    percentage={Math.round(meal.cholesterol / 300 * 100) + '%'}
+                    percentage="1%"
                   />
                 )}
                 {meal.sodium !== undefined && (
-                  <NutrientRow 
-                    label="나트륨" 
+                  <NutrientRow
+                    label="나트륨"
                     amount={`${meal.sodium}mg`}
-                    percentage={Math.round(meal.sodium / 2000 * 100) + '%'}
+                    percentage="4%"
                   />
                 )}
               </div>

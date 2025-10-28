@@ -8,7 +8,7 @@ interface GoogleUserInfo {
 
 export const useGoogleAuth = () => {
   const [userInfo, setUserInfo] = useState<GoogleUserInfo>({});
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // localStorage에서 Google 토큰 확인
@@ -52,5 +52,14 @@ export const useGoogleAuth = () => {
     }
   }, []);
 
-  return { userInfo, isLoading };
+  const logout = () => {
+    // localStorage에서 Google 토큰 제거
+    localStorage.removeItem('google_credential');
+    // 사용자 정보 초기화
+    setUserInfo({});
+    // 로그인 페이지로 리다이렉트
+    window.location.href = '/login';
+  };
+
+  return { userInfo, logout };
 };

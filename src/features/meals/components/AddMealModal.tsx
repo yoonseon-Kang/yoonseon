@@ -26,6 +26,11 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       protein: 0,
       carbs: 0,
       fat: 0,
+      sugar: 0,
+      sodium: 0,
+      cholesterol: 0,
+      saturatedFat: 0,
+      transFat: 0,
       time: new Date().toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -236,37 +241,163 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
               />
             </div>
 
+
             <div>
-              <label htmlFor="time" className="block text-sm font-medium text-gray-700">
-                시간
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+                양(g)
               </label>
-              <div className="mt-1 flex gap-2">
+              <input
+                type="number"
+                id="amount"
+                value={mealData.amount || ''}
+                onChange={(e) => setMealData(prev => ({ ...prev, amount: parseInt(e.target.value) || 0 }))}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                min="0"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="calories" className="block text-sm font-medium text-gray-700">
+                  칼로리(kcal)
+                </label>
                 <input
-                  type="time"
-                  id="time"
-                  value={mealData.time}
-                  onChange={(e) => setMealData(prev => ({ ...prev, time: e.target.value }))}
-                  className="block flex-1 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
-                  required
+                  type="number"
+                  id="calories"
+                  value={mealData.calories || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, calories: parseInt(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="1"
                 />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const now = new Date();
-                    const currentTime = now.toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false
-                    });
-                    setMealData(prev => ({ ...prev, time: currentTime }));
-                  }}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                >
-                  현재 시각
-                </button>
+              </div>
+              <div>
+                <label htmlFor="protein" className="block text-sm font-medium text-gray-700">
+                  단백질(g)
+                </label>
+                <input
+                  type="number"
+                  id="protein"
+                  value={mealData.protein || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, protein: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="carbs" className="block text-sm font-medium text-gray-700">
+                  탄수화물(g)
+                </label>
+                <input
+                  type="number"
+                  id="carbs"
+                  value={mealData.carbs || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, carbs: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label htmlFor="sugar" className="block text-sm font-medium text-gray-700">
+                  당류(g)
+                </label>
+                <input
+                  type="number"
+                  id="sugar"
+                  value={mealData.sugar || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, sugar: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fat" className="block text-sm font-medium text-gray-700">
+                  지방(g)
+                </label>
+                <input
+                  type="number"
+                  id="fat"
+                  value={mealData.fat || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, fat: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label htmlFor="saturatedFat" className="block text-sm font-medium text-gray-700">
+                  포화지방(g)
+                </label>
+                <input
+                  type="number"
+                  id="saturatedFat"
+                  value={mealData.saturatedFat || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, saturatedFat: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="transFat" className="block text-sm font-medium text-gray-700">
+                  트랜스지방(g)
+                </label>
+                <input
+                  type="number"
+                  id="transFat"
+                  value={mealData.transFat || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, transFat: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label htmlFor="cholesterol" className="block text-sm font-medium text-gray-700">
+                  콜레스테롤(mg)
+                </label>
+                <input
+                  type="number"
+                  id="cholesterol"
+                  value={mealData.cholesterol || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, cholesterol: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="sodium" className="block text-sm font-medium text-gray-700">
+                  나트륨(mg)
+                </label>
+                <input
+                  type="number"
+                  id="sodium"
+                  value={mealData.sodium || ''}
+                  onChange={(e) => setMealData(prev => ({ ...prev, sodium: parseFloat(e.target.value) || 0 }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div></div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">

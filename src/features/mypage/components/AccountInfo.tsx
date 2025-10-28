@@ -13,6 +13,7 @@ interface UserInfo {
   email: string;
   height: string;
   weight: string;
+  age: string;
   birthDate: string;
   address: string;
   guardian?: GuardianInfo;
@@ -23,12 +24,29 @@ export const AccountInfo: React.FC = () => {
   const { userInfo: globalUserInfo, updateUserInfo } = useUser();
   const { userInfo: googleUserInfo } = useGoogleAuth();
 
+  // 만 나이 계산 함수
+  const calculateAge = (birthDate: string): string => {
+    if (!birthDate) return '';
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age.toString();
+  };
+
   // 전역 상태에서 데이터가 없으면 구글 정보 또는 기본값 사용
   const [userInfo, setUserInfo] = useState<UserInfo>({
     name: (globalUserInfo.name && globalUserInfo.name.trim()) || googleUserInfo.name || '홍길동',
     email: (globalUserInfo.email && globalUserInfo.email.trim()) || googleUserInfo.email || 'example@email.com',
     height: globalUserInfo.height || '170',
     weight: globalUserInfo.weight || '70',
+    age: globalUserInfo.age || '25',
     birthDate: globalUserInfo.birthDate || '1990-01-01',
     address: globalUserInfo.address || '서울시 강남구',
     guardian: globalUserInfo.guardian
@@ -43,6 +61,7 @@ export const AccountInfo: React.FC = () => {
       email: (globalUserInfo.email && globalUserInfo.email.trim()) || googleUserInfo.email || 'example@email.com',
       height: globalUserInfo.height || '170',
       weight: globalUserInfo.weight || '70',
+      age: globalUserInfo.age || '25',
       birthDate: globalUserInfo.birthDate || '1990-01-01',
       address: globalUserInfo.address || '서울시 강남구',
       guardian: globalUserInfo.guardian
@@ -120,9 +139,31 @@ export const AccountInfo: React.FC = () => {
             <input
               type="date"
               value={userInfo.birthDate}
-              onChange={(e) => setUserInfo({ ...userInfo, birthDate: e.target.value })}
+              onChange={(e) => {
+                const newBirthDate = e.target.value;
+                const calculatedAge = calculateAge(newBirthDate);
+                setUserInfo({
+                  ...userInfo,
+                  birthDate: newBirthDate,
+                  age: calculatedAge
+                });
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              나이
+            </label>
+            <input
+              type="number"
+              value={userInfo.age}
+              onChange={(e) => setUserInfo({ ...userInfo, age: e.target.value })}
+              placeholder="생년월일에서 자동 계산됨"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <p className="mt-1 text-sm text-gray-500">생년월일에서 자동 계산됨 (수정 가능)</p>
           </div>
 
           <div>
@@ -133,6 +174,13 @@ export const AccountInfo: React.FC = () => {
               type="number"
               value={userInfo.height}
               onChange={(e) => setUserInfo({ ...userInfo, height: e.target.value })}
+              onBlur={(e) => {
+                const numValue = parseFloat(e.target.value) || 0;
+                const formattedValue = numValue.toFixed(2);
+                setUserInfo({ ...userInfo, height: formattedValue });
+              }}
+              placeholder="170.00"
+              step="0.01"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
@@ -145,6 +193,13 @@ export const AccountInfo: React.FC = () => {
               type="number"
               value={userInfo.weight}
               onChange={(e) => setUserInfo({ ...userInfo, weight: e.target.value })}
+              onBlur={(e) => {
+                const numValue = parseFloat(e.target.value) || 0;
+                const formattedValue = numValue.toFixed(2);
+                setUserInfo({ ...userInfo, weight: formattedValue });
+              }}
+              placeholder="65.00"
+              step="0.01"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
@@ -259,12 +314,16 @@ export const AccountInfo: React.FC = () => {
             <p className="mt-1">{userInfo.birthDate}</p>
           </div>
           <div>
+            <p className="text-sm text-gray-500">나이</p>
+            <p className="mt-1">{userInfo.age}세</p>
+          </div>
+          <div>
             <p className="text-sm text-gray-500">키</p>
-            <p className="mt-1">{userInfo.height}cm</p>
+            <p className="mt-1">{parseFloat(userInfo.height || '0').toFixed(2)}cm</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">몸무게</p>
-            <p className="mt-1">{userInfo.weight}kg</p>
+            <p className="mt-1">{parseFloat(userInfo.weight || '0').toFixed(2)}kg</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">거주지</p>
