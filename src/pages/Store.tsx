@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { KakaoMap } from '../components/KakaoMap';
+import { KakaoMap, Store } from '../components/KakaoMap';
 import { useUser } from '../contexts/UserContext';
+import { getStoresByDistrict } from '../services/storeService';
 
-type CityKey = '서울특별시' | '부산광역시' | '대구광역시' | '인천광역시' | '광주광역시' | '대전광역시' | '울산광역시' | '세종특별자치시' | '경기도' | '강원도' | '충청북도' | '충청남도';
+type CityKey = '서울특별시' | '부산광역시' | '대구광역시' | '인천광역시' | '광주광역시' | '대전광역시' | '울산광역시' | '세종특별자치시' | '경기도' | '강원특별자치도' | '충청북도' | '충청남도' | '경상남도' | '경상북도' | '전북특별자치도';
 
 export const StorePage: React.FC = () => {
   const { userInfo } = useUser();
@@ -12,8 +13,50 @@ export const StorePage: React.FC = () => {
   const parseAddress = (address: string): { city: CityKey | null; district: string | null } => {
     if (!address) return { city: null, district: null };
 
-    const addressPattern = /^(.+?)(시|도|특별시|광역시|특별자치시|특별자치도)\s+(.+?)(구|군|시)$/;
-    const match = address.match(addressPattern);
+    // 주소 정규화 - "서울시" -> "서울특별시"
+    let normalized = address.trim();
+
+    // 약칭을 전체 이름으로 변환
+    const cityMapping: Record<string, CityKey> = {
+      '서울시': '서울특별시',
+      '서울': '서울특별시',
+      '부산시': '부산광역시',
+      '부산': '부산광역시',
+      '대구시': '대구광역시',
+      '대구': '대구광역시',
+      '인천시': '인천광역시',
+      '인천': '인천광역시',
+      '광주시': '광주광역시',
+      '광주': '광주광역시',
+      '대전시': '대전광역시',
+      '대전': '대전광역시',
+      '울산시': '울산광역시',
+      '울산': '울산광역시',
+      '세종시': '세종특별자치시',
+      '세종': '세종특별자치시',
+      '경기': '경기도',
+      '강원': '강원특별자치도',
+      '충북': '충청북도',
+      '충남': '충청남도',
+      '경남': '경상남도',
+      '경북': '경상북도',
+      '전북': '전북특별자치도'
+    };
+
+    // 시도명 매칭
+    for (const [short, full] of Object.entries(cityMapping)) {
+      if (normalized.startsWith(short)) {
+        const rest = normalized.substring(short.length).trim();
+        return {
+          city: full,
+          district: rest
+        };
+      }
+    }
+
+    // 정규식으로 파싱 (완전한 형태)
+    const addressPattern = /^(.+?)(특별시|광역시|특별자치시|특별자치도|도)\s+(.+?)(구|군|시)/;
+    const match = normalized.match(addressPattern);
 
     if (!match) return { city: null, district: null };
 
@@ -36,23 +79,26 @@ export const StorePage: React.FC = () => {
 
   const cities: CityKey[] = [
     '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시',
-    '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원도',
-    '충청북도', '충청남도'
+    '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도',
+    '충청북도', '충청남도', '경상남도', '경상북도', '전북특별자치도'
   ];
 
   const districtsByCity: Record<CityKey, string[]> = {
-    '서울특별시': ['서대문구', '양천구', '구로구', '영등포구', '관악구', '강남구', '마포구', '강서구', '금천구', '동작구', '서초구', '송파구'],
-    '부산광역시': ['중구', '서구', '동구', '영도구', '부산진구', '동래구', '남구', '북구', '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군'],
-    '대구광역시': ['중구', '동구', '서구', '남구', '북구', '수성구', '달서구', '달성군'],
-    '인천광역시': ['중구', '동구', '미추홀구', '연수구', '남동구', '부평구', '계양구', '서구', '강화군', '옹진군'],
-    '광주광역시': ['동구', '서구', '남구', '북구', '광산구'],
-    '대전광역시': ['동구', '중구', '서구', '유성구', '대덕구'],
-    '울산광역시': ['중구', '남구', '동구', '북구', '울주군'],
-    '세종특별자치시': ['세종시'],
-    '경기도': ['수원시', '성남시', '고양시', '용인시', '부천시', '안산시', '안양시', '남양주시', '화성시', '평택시', '의정부시', '시흥시', '파주시', '광명시', '김포시', '군포시', '광주시', '이천시', '양주시', '오산시', '구리시', '안성시', '포천시', '의왕시', '하남시', '여주시', '양평군', '동두천시', '과천시', '가평군', '연천군'],
-    '강원도': ['춘천시', '원주시', '강릉시', '동해시', '태백시', '속초시', '삼척시', '홍천군', '횡성군', '영월군', '평창군', '정선군', '철원군', '화천군', '양구군', '인제군', '고성군', '양양군'],
-    '충청북도': ['청주시', '충주시', '제천시', '보은군', '옥천군', '영동군', '증평군', '진천군', '괴산군', '음성군', '단양군'],
-    '충청남도': ['천안시', '공주시', '보령시', '아산시', '서산시', '논산시', '계룡시', '당진시', '금산군', '부여군', '서천군', '청양군', '홍성군', '예산군', '태안군']
+    '서울특별시': ['강남구', '강북구', '강서구', '관악구', '광진구', '동대문구', '동작구', '마포구', '성북구', '영등포구', '용산구', '중구', '중랑구'],
+    '부산광역시': ['강서구', '동래구', '북구', '서구', '연제구', '해운대구'],
+    '대구광역시': ['남구', '달서구', '북구', '수성구', '중구'],
+    '인천광역시': ['남동구', '미추홀구', '연수구'],
+    '광주광역시': ['광산구', '남구', '동구', '북구', '서구'],
+    '대전광역시': ['서구', '유성구'],
+    '울산광역시': ['울주군', '중구'],
+    '세종특별자치시': ['없음'],
+    '경기도': ['과천시', '광명시', '구리시', '군포시', '동두천시', '부천시', '수원시', '안산시 단원구', '안산시 상록구', '양주시', '여주시', '연천군', '용인시', '의왕시', '의정부시', '파주시', '평택시', '하남시'],
+    '강원특별자치도': ['삼척시', '속초시', '영월군', '원주시', '춘천시', '화천군'],
+    '충청북도': ['단양군', '증평군'],
+    '충청남도': ['금산군', '논산시', '부여군', '서산시', '천안시 동남구', '천안시 서북구', '청양군', '태안군', '홍성군'],
+    '경상남도': ['김해시', '밀양시', '사천시', '창원시', '통영시', '함양군'],
+    '경상북도': ['경산시', '경주시', '구미시', '김천시', '문경시', '상주시', '영주시', '영천시', '울진군', '청도군', '포항시'],
+    '전북특별자치도': ['남원시', '전주시 덕진구', '전주시 완산구', '정읍시']
   };
 
   const currentDistricts = districtsByCity[tempSelectedCity] || [];
@@ -86,9 +132,66 @@ export const StorePage: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  // 매장 데이터 상태
+  const [allStores, setAllStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+
+  // 검색 상태
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Store[]>([]);
+
+  // 선택된 지역에 따라 매장 데이터 로드
+  useEffect(() => {
+    const loadStores = async () => {
+      setLoading(true);
+      try {
+        const stores = await getStoresByDistrict(selectedCity, selectedDistricts);
+        setAllStores(stores);
+      } catch (error) {
+        console.error('매장 데이터 로드 실패:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStores();
+  }, [selectedCity, selectedDistricts]);
+
+  // 선택된 지역에 따라 필터링된 매장
+  const filteredStores = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allStores;
+    }
+
+    // 검색어가 있으면 매장명, 주소, 동으로 필터링
+    return allStores.filter(store =>
+      store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.dong.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allStores, searchQuery]);
+
+  // 매장 클릭 핸들러
+  const handleStoreClick = (store: Store) => {
+    // 매장 클릭 시 지도를 해당 매장 위치로 이동
+    setSelectedStoreId(store.id);
+
+    // 지도가 있는 위치로 스크롤
+    const mapElement = document.querySelector('.h-64');
+    if (mapElement) {
+      mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  // 매장 검색 핸들러
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   return (
     <motion.div
-      className="container mx-auto px-4 py-6 space-y-6 max-w-lg"
+      className="container mx-auto px-4 py-6 space-y-3 max-w-lg"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -114,16 +217,49 @@ export const StorePage: React.FC = () => {
         </Card>
       </motion.div>
 
-      {/* 카카오맵 카드 */}
+      {/* 매장 검색 + 카카오맵 카드 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <Card>
-          <CardContent className="pt-6 pb-4 px-4">
+          <CardContent className="pt-4 pb-4 px-4 space-y-3">
+            {/* 검색창 */}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="매장명·주소·동 검색"
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                fontSize: '15px',
+                border: 'none',
+                borderRadius: '12px',
+                backgroundColor: '#f5f5f5',
+                outline: 'none',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                color: '#1a1a1a',
+                transition: 'all 0.2s'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.backgroundColor = '#ebebeb';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+              }}
+            />
+
+            {/* 지도 */}
             <div className="h-64 relative bg-gray-100 rounded-lg overflow-hidden">
-              <KakaoMap city={selectedCity} districts={selectedDistricts} />
+              <KakaoMap
+                city={selectedCity}
+                districts={selectedDistricts}
+                stores={filteredStores}
+                onStoreClick={handleStoreClick}
+                selectedStoreId={selectedStoreId}
+              />
             </div>
           </CardContent>
         </Card>
@@ -138,7 +274,7 @@ export const StorePage: React.FC = () => {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">매장 목록 (5개)</CardTitle>
+              <CardTitle className="text-lg">매장 목록 ({filteredStores.length}개)</CardTitle>
               <span className="text-sm text-gray-500">
                 {selectedDistricts.length > 0
                   ? `${selectedCity} ${selectedDistricts.join(', ')}`
@@ -149,76 +285,47 @@ export const StorePage: React.FC = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-4">
-              {[
-                {
-                  id: 1,
-                  name: '키즈 키친',
-                  address: '서대문구 연희동 123-45',
-                  tel: '02-1234-5678',
-                  district: '서대문구',
-                  dong: '연희동'
-                },
-                {
-                  id: 2,
-                  name: '영양만점 식당',
-                  address: '서대문구 창천동 56-78',
-                  tel: '02-2345-6789',
-                  district: '서대문구',
-                  dong: '창천동'
-                },
-                {
-                  id: 3,
-                  name: '성장맘 레스토랑',
-                  address: '서대문구 대현동 90-12',
-                  tel: '02-3456-7890',
-                  district: '서대문구',
-                  dong: '대현동'
-                },
-                {
-                  id: 4,
-                  name: '성정담 레스토랑',
-                  address: '마포구 대현동 90-12',
-                  tel: '02-3456-7890',
-                  district: '마포구',
-                  dong: '대현동'
-                },
-                {
-                  id: 5,
-                  name: '아이사랑 카페',
-                  address: '마포구 홍대동 78-90',
-                  tel: '02-5678-9012',
-                  district: '마포구',
-                  dong: '홍대동'
-                }
-              ].map((store) => (
-                <motion.div
-                  key={store.id}
-                  className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                  whileHover={{ scale: 1.02, backgroundColor: "#F3F4F6" }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-gray-900">{store.name}</h3>
-                      <div className="flex space-x-1">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {store.district}
-                        </span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {store.dong}
-                        </span>
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2">매장 정보를 불러오는 중...</p>
+                </div>
+              ) : filteredStores.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  선택한 지역에 매장이 없습니다.
+                </div>
+              ) : (
+                filteredStores.map((store) => (
+                  <motion.div
+                    key={store.id}
+                    className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    whileHover={{ scale: 1.02, backgroundColor: "#F3F4F6" }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    onClick={() => handleStoreClick(store)}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-gray-900">{store.name}</h3>
+                        <div className="flex space-x-1">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {store.district}
+                          </span>
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {store.dong}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        <p className="text-xs text-gray-500">{store.address}</p>
+                        {store.tel && <p className="text-xs text-gray-500">☎ {store.tel}</p>}
                       </div>
                     </div>
-                    <div className="mt-1 space-y-1">
-                      <p className="text-xs text-gray-500">{store.address}</p>
-                      <p className="text-xs text-gray-500">☎ {store.tel}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

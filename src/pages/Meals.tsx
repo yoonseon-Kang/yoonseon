@@ -30,7 +30,7 @@ export const MealsPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [mealToDelete, setMealToDelete] = useState<Meal | null>(null);
-  const { getMealsByDate, deleteMeal, updateMeal, hasMealsOnDate } = useMeals();
+  const { getMealsByDate, deleteMeal, updateMeal, addMeal, hasMealsOnDate } = useMeals();
 
   // URL 파라미터에서 날짜를 가져와서 selectedDate 설정
   useEffect(() => {
@@ -81,10 +81,18 @@ export const MealsPage: React.FC = () => {
     setSelectedMeal(null);
   };
 
-  const handleMealUpdate = (updatedMeal: Meal) => {
+  const handleMealSubmit = (meal: Meal) => {
     if (selectedMeal) {
+      // 수정 모드
       const date = selectedDateMeals.includes(selectedMeal) ? selectedDate : yesterday;
-      updateMeal(date, selectedMeal.id, updatedMeal);
+      updateMeal(date, selectedMeal.id, meal);
+    } else {
+      // 추가 모드
+      const newMeal: Meal = {
+        ...meal,
+        id: Date.now().toString() // 고유 ID 생성
+      };
+      addMeal(selectedDate, newMeal);
     }
     handleModalClose();
   };
@@ -264,7 +272,7 @@ export const MealsPage: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={handleModalClose}
         initialMeal={selectedMeal}
-        onSubmit={handleMealUpdate}
+        onSubmit={handleMealSubmit}
       />
 
       <ConfirmModal

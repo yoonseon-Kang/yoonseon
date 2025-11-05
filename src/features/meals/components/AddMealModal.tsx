@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Meal } from './MealCard';
-import { FoodItem, searchFoods } from '../data/foodData';
+import { FoodNutrition, loadFoodData, searchFoodByName, calculateNutrients } from '../../../services/foodService';
 
 export interface AddMealModalProps {
   isOpen: boolean;
@@ -44,6 +44,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isFoodDataLoaded, setIsFoodDataLoaded] = useState(false);
 
   const startCamera = async () => {
     try {
@@ -87,19 +88,32 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       stopCamera();
     }
   };
-  const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
+  const [searchResults, setSearchResults] = useState<FoodNutrition[]>([]);
   const [showResults, setShowResults] = useState(false);
 
+  // CSV 데이터 로드
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const results = searchFoods(searchQuery);
+    const loadData = async () => {
+      try {
+        await loadFoodData();
+        setIsFoodDataLoaded(true);
+      } catch (error) {
+        console.error('음식 데이터 로드 실패:', error);
+      }
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim() && isFoodDataLoaded) {
+      const results = searchFoodByName(searchQuery, 20);
       setSearchResults(results);
       setShowResults(true);
     } else {
       setSearchResults([]);
       setShowResults(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, isFoodDataLoaded]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -115,24 +129,28 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
     };
   }, []);
 
-  const calculateNutrients = (food: FoodItem, amount: number) => {
-    const ratio = amount / food.servingSize;
-    return {
-      calories: Math.round(food.calories * ratio),
-      protein: Math.round(food.protein * ratio * 10) / 10,
-      carbs: Math.round(food.carbs * ratio * 10) / 10,
-      fat: Math.round(food.fat * ratio * 10) / 10
-    };
-  };
-
-  const handleFoodSelect = (food: FoodItem) => {
+  const handleFoodSelect = (food: FoodNutrition) => {
     const nutrients = calculateNutrients(food, food.servingSize);
+
+    // 모든 영양소 값이 0이거나 NaN이면 0으로 설정
+    const safeValue = (value: number): number => {
+      return (value === null || value === undefined || isNaN(value)) ? 0 : value;
+    };
+
     setMealData(prev => ({
       ...prev,
       name: food.name,
       amount: food.servingSize,
       foodId: food.id,
-      ...nutrients
+      calories: safeValue(nutrients.calories),
+      protein: safeValue(nutrients.protein),
+      carbs: safeValue(nutrients.carbs),
+      sugar: safeValue(nutrients.sugar),
+      fat: safeValue(nutrients.fat),
+      saturatedFat: safeValue(nutrients.saturatedFat),
+      transFat: safeValue(nutrients.transFat),
+      cholesterol: safeValue(nutrients.cholesterol),
+      sodium: safeValue(nutrients.sodium)
     }));
     setSearchQuery('');
     setShowResults(false);
@@ -144,17 +162,42 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       setSelectedImage(null);
       setSearchQuery('');
       setShowResults(false);
+    } else {
+      // 모달이 열릴 때 초기화
+      if (initialMeal) {
+        setMealData({ ...initialMeal });
+      } else {
+        setMealData({
+          name: '',
+          amount: 100,
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          sugar: 0,
+          sodium: 0,
+          cholesterol: 0,
+          saturatedFat: 0,
+          transFat: 0,
+          time: new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          })
+        });
+      }
     }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  }, [isOpen, initialMeal]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleSubmit called', { mealData, onSubmit: typeof onSubmit });
     if (mealData.name && mealData.time) {
       onSubmit(mealData as Meal);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -200,17 +243,23 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                   </svg>
                 </button>
                 {showResults && searchResults.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto">
+                  <div className="absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto border border-gray-200">
                     <ul className="py-1">
                       {searchResults.map(food => (
                         <li
                           key={food.id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                           onClick={() => handleFoodSelect(food)}
                         >
-                          <div className="font-medium">{food.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {food.category} · {food.servingSize}g · {food.calories}kcal
+                          <div className="font-medium text-gray-900">{food.name}</div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {food.category} · {food.servingSize}g
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1 flex gap-3">
+                            <span>{food.calories}kcal</span>
+                            <span>단백질 {food.protein}g</span>
+                            <span>탄수화물 {food.carbs}g</span>
+                            <span>지방 {food.fat}g</span>
                           </div>
                         </li>
                       ))}

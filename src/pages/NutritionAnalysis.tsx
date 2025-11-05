@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, ReferenceLine, Legend } from 'recharts';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -67,65 +67,114 @@ export const NutritionAnalysisPage: React.FC = () => {
     { day: '일', protein: 78, carbs: 244, fat: 66, '단백질': 78, '탄수화물': 244, '지방': 66 },
   ];
 
-  // 영양소 섭취량 비교 데이터 (권장량 대비)
+  // 상태 계산: 80% 미만 = 부족, 80-120% = 적정, 120% 초과 = 과다
+  const calculateStatus = (current: number, recommended: number): string => {
+    const percentage = (current / recommended) * 100;
+    if (percentage < 80) return '부족';
+    if (percentage <= 120) return '적정';
+    return '과다';
+  };
+
+  // 상태에 따른 색상 (프로젝트 컬러에 맞춤)
+  const getColorByStatus = (status: string): string => {
+    switch(status) {
+      case '부족': return '#FBBF24'; // 따뜻한 노란색
+      case '적정': return '#10B981'; // 에메랄드 그린
+      case '과다': return '#F59E0B'; // 오렌지
+      default: return '#94A3B8';
+    }
+  };
+
+  // 영양소 섭취량 비교 데이터 (권장량 대비) - NutritionChart 색상과 일치
   const nutritionComparisonData = [
     {
       name: '칼로리',
       current: 1850,
       recommended: 2000,
       unit: 'kcal',
-      color: '#8B5CF6',
-      status: '적정'
-    },
-    {
-      name: '단백질',
-      current: 78,
-      recommended: 60,
-      unit: 'g',
-      color: '#10B981',
-      status: '충분'
+      fixedColor: '#9ca3af', // 회색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
     },
     {
       name: '탄수화물',
       current: 244,
       recommended: 300,
       unit: 'g',
-      color: '#3B82F6',
-      status: '부족'
+      fixedColor: '#3b82f6', // 파란색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
+    },
+    {
+      name: '단백질',
+      current: 78,
+      recommended: 60,
+      unit: 'g',
+      fixedColor: '#10b981', // 초록색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
     },
     {
       name: '지방',
       current: 66,
       recommended: 50,
       unit: 'g',
-      color: '#F59E0B',
-      status: '주의'
+      fixedColor: '#f59e0b', // 주황색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
     },
     {
-      name: '식이섬유',
-      current: 18,
-      recommended: 25,
+      name: '당류',
+      current: 45,
+      recommended: 50,
       unit: 'g',
-      color: '#EC4899',
-      status: '부족'
+      fixedColor: '#ef4444', // 빨간색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
+    },
+    {
+      name: '포화지방',
+      current: 15,
+      recommended: 20,
+      unit: 'g',
+      fixedColor: '#8b5cf6', // 보라색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
+    },
+    {
+      name: '트랜스지방',
+      current: 0.5,
+      recommended: 2,
+      unit: 'g',
+      fixedColor: '#ec4899', // 핑크색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
+    },
+    {
+      name: '콜레스테롤',
+      current: 180,
+      recommended: 300,
+      unit: 'mg',
+      fixedColor: '#06b6d4', // 청록색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
     },
     {
       name: '나트륨',
       current: 2800,
       recommended: 2000,
       unit: 'mg',
-      color: '#EF4444',
-      status: '과다'
+      fixedColor: '#84cc16', // 라임색
+      get status() { return calculateStatus(this.current, this.recommended); },
+      get color() { return this.fixedColor; }
     },
   ];
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case '충분': return 'text-green-600 bg-green-50';
-      case '적정': return 'text-blue-600 bg-blue-50';
-      case '부족': return 'text-orange-600 bg-orange-50';
-      case '주의': return 'text-yellow-600 bg-yellow-50';
-      case '과다': return 'text-red-600 bg-red-50';
+      case '적정': return 'text-emerald-700 bg-emerald-50';
+      case '부족': return 'text-yellow-700 bg-yellow-50';
+      case '과다': return 'text-orange-700 bg-orange-50';
       default: return 'text-gray-600 bg-gray-50';
     }
   };
@@ -137,7 +186,7 @@ export const NutritionAnalysisPage: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, staggerChildren: 0.1 }}
     >
-      <motion.h1 
+      <motion.h1
         className="text-2xl font-bold mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -146,79 +195,92 @@ export const NutritionAnalysisPage: React.FC = () => {
         영양 분석
       </motion.h1>
 
-      <motion.div 
+      <motion.div
         className="space-y-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
+        {/* BMI 분석 */}
         <Card>
           <CardHeader>
-            <CardTitle>영양소 섭취 현황</CardTitle>
+            <CardTitle>BMI 분석</CardTitle>
           </CardHeader>
           <CardContent>
-            <motion.div 
-              className="h-[300px]"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="단백질"
-                    stroke="#10B981"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="탄수화물"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="지방"
-                    stroke="#F59E0B"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </motion.div>
-
-            <motion.div 
-              className="grid grid-cols-3 gap-4 mt-4"
+            <motion.div
+              className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
+              {/* BMI 수치와 상태 */}
               <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">단백질</div>
-                <div className="text-lg font-semibold text-[#10B981]">78g</div>
+                <p className="text-sm text-gray-600 mb-2">
+                  신체질량지수(BMI)는 <span className="font-bold text-2xl" style={{ color: bmiColor }}>{bmi}</span> 로 '<span className="font-bold text-xl" style={{ color: bmiColor }}>{bmiStatus}</span>' 입니다.
+                </p>
+                <p className="text-sm text-gray-600">
+                  평균체중은 <span className="font-bold">{userStats.weight} kg</span> 입니다.
+                </p>
               </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">탄수화물</div>
-                <div className="text-lg font-semibold text-[#3B82F6]">244g</div>
+
+              {/* BMI 범위 바 */}
+              <div className="relative">
+                <div className="flex h-8 rounded-full overflow-hidden">
+                  <div className="bg-blue-400 flex-1 flex items-center justify-center text-xs text-white font-medium">
+                    저체중
+                  </div>
+                  <div className="bg-emerald-400 flex-1 flex items-center justify-center text-xs text-white font-medium">
+                    정상
+                  </div>
+                  <div className="bg-orange-400 flex-1 flex items-center justify-center text-xs text-white font-medium">
+                    과체중
+                  </div>
+                  <div className="bg-red-400 flex-1 flex items-center justify-center text-xs text-white font-medium">
+                    비만
+                  </div>
+                </div>
+
+                {/* BMI 값 표시 화살표 */}
+                <div
+                  className="absolute top-full mt-1 transform -translate-x-1/2"
+                  style={{
+                    left: `${Math.min(Math.max((bmi / 35) * 100, 5), 95)}%`
+                  }}
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[12px] border-transparent border-b-gray-800"></div>
+                  </div>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-500">지방</div>
-                <div className="text-lg font-semibold text-[#F59E0B]">66g</div>
+
+              {/* 범위 표시 */}
+              <div className="flex justify-between text-xs text-gray-500 mt-4">
+                <span>0</span>
+                <span>18.5</span>
+                <span>23</span>
+                <span>25</span>
+                <span>30+</span>
+              </div>
+
+              {/* 키와 체중 */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-800">{userStats.height} cm</div>
+                  <div className="text-xs text-gray-500 mt-1">키</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-800">{userStats.weight} kg</div>
+                  <div className="text-xs text-gray-500 mt-1">체중</div>
+                </div>
               </div>
             </motion.div>
           </CardContent>
         </Card>
 
+        {/* 오늘의 영양소 섭취량 분석 */}
         <Card>
           <CardHeader>
-            <CardTitle>영양소 섭취량 비교 분석</CardTitle>
+            <CardTitle>오늘의 영양소 섭취량 분석</CardTitle>
           </CardHeader>
           <CardContent>
             <motion.div
@@ -307,55 +369,174 @@ export const NutritionAnalysisPage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* 주간 영양소 섭취 현황 */}
         <Card>
           <CardHeader>
-            <CardTitle>BMI 분석</CardTitle>
+            <CardTitle>주간 영양소 섭취 현황</CardTitle>
           </CardHeader>
           <CardContent>
-            <motion.div 
-              className="space-y-6"
-              initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+            <motion.div
+              className="h-[400px]"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-bold" style={{ color: bmiColor }}>
-                  {bmi}
-                </div>
-                <div className="text-lg font-medium" style={{ color: bmiColor }}>
-                  {bmiStatus}
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={weeklyData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="day"
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    stroke="#9ca3af"
+                  />
+                  <YAxis
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    stroke="#9ca3af"
+                    label={{ value: '섭취량 (g)', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 11 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      padding: '10px 14px',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}
+                    labelStyle={{ fontWeight: 'bold', marginBottom: '6px', color: '#374151', fontSize: '14px' }}
+                    itemStyle={{ fontSize: '13px', padding: '2px 0' }}
+                    formatter={(value: number, name: string) => {
+                      const recommended: { [key: string]: number } = {
+                        '단백질': 80,
+                        '탄수화물': 300,
+                        '지방': 60
+                      };
+                      const recommendedValue = recommended[name] || 0;
+                      const percentage = ((value / recommendedValue) * 100).toFixed(0);
+                      return [`${value}g (${percentage}%)`, name];
+                    }}
+                  />
 
-              <div className="h-[100px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={bmiRanges} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" domain={[0, 35]} />
-                    <YAxis dataKey="range" type="category" />
-                    <Tooltip />
-                    <Bar
-                      dataKey="max"
-                      fill="#E5E7EB"
-                      radius={[0, 4, 4, 0]}
-                    />
-                    <Bar
-                      dataKey="current"
-                      fill={bmiColor}
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                  {/* 권장 섭취량 기준선 */}
+                  <ReferenceLine
+                    y={80}
+                    stroke="#10b981"
+                    strokeDasharray="5 5"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.5}
+                    label={{ value: '단백질 권장', position: 'right', fill: '#10b981', fontSize: 10 }}
+                  />
+                  <ReferenceLine
+                    y={300}
+                    stroke="#3b82f6"
+                    strokeDasharray="5 5"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.5}
+                    label={{ value: '탄수화물 권장', position: 'right', fill: '#3b82f6', fontSize: 10 }}
+                  />
+                  <ReferenceLine
+                    y={60}
+                    stroke="#f59e0b"
+                    strokeDasharray="5 5"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.5}
+                    label={{ value: '지방 권장', position: 'right', fill: '#f59e0b', fontSize: 10 }}
+                  />
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-gray-500">키</div>
-                  <div className="font-medium">{userStats.height} cm</div>
+                  <Line
+                    type="monotone"
+                    dataKey="단백질"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 7 }}
+                    name="단백질"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="탄수화물"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    dot={{ r: 5, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 7 }}
+                    name="탄수화물"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="지방"
+                    stroke="#f59e0b"
+                    strokeWidth={3}
+                    dot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 7 }}
+                    name="지방"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </motion.div>
+
+            {/* 주간 평균 및 권장량 비교 */}
+            <motion.div
+              className="mt-4 space-y-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
+                    <div className="text-xs font-medium text-gray-600">단백질</div>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">78g</div>
+                  <div className="text-xs text-gray-500 mt-0.5">주간 평균</div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-emerald-200">
+                    <span className="text-xs text-gray-500">권장</span>
+                    <span className="text-xs font-semibold text-gray-700">80g</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-emerald-600 font-medium">98%</span>
+                      <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">부족</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-gray-500">체중</div>
-                  <div className="font-medium">{userStats.weight} kg</div>
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-3 h-3 rounded-full bg-[#3b82f6]"></div>
+                    <div className="text-xs font-medium text-gray-600">탄수화물</div>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">244g</div>
+                  <div className="text-xs text-gray-500 mt-0.5">주간 평균</div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-200">
+                    <span className="text-xs text-gray-500">권장</span>
+                    <span className="text-xs font-semibold text-gray-700">300g</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-blue-600 font-medium">81%</span>
+                      <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">적정</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+                    <div className="text-xs font-medium text-gray-600">지방</div>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">66g</div>
+                  <div className="text-xs text-gray-500 mt-0.5">주간 평균</div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-orange-200">
+                    <span className="text-xs text-gray-500">권장</span>
+                    <span className="text-xs font-semibold text-gray-700">60g</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-orange-600 font-medium">110%</span>
+                      <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium">과다</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>

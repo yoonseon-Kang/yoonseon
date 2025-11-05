@@ -46,17 +46,48 @@ const defaultUserInfo: UserInfo = {
 // Context 생성
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// localStorage 키
+const STORAGE_KEY = 'nutureTableUserInfo';
+
 // Provider 컴포넌트
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [userInfo, setUserInfoState] = useState<UserInfo>(defaultUserInfo);
+  // localStorage에서 초기 데이터 로드
+  const [userInfo, setUserInfoState] = useState<UserInfo>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log('localStorage에서 사용자 정보 로드:', parsed);
+        return { ...defaultUserInfo, ...parsed };
+      }
+    } catch (error) {
+      console.error('사용자 정보 로드 실패:', error);
+    }
+    return defaultUserInfo;
+  });
+
+  // userInfo가 변경될 때마다 localStorage에 저장
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userInfo));
+      console.log('localStorage에 사용자 정보 저장:', userInfo);
+    } catch (error) {
+      console.error('사용자 정보 저장 실패:', error);
+    }
+  }, [userInfo]);
 
   // 부분 업데이트 함수
   const updateUserInfo = (info: Partial<UserInfo>) => {
-    setUserInfoState(prev => ({ ...prev, ...info }));
+    setUserInfoState(prev => {
+      const updated = { ...prev, ...info };
+      console.log('사용자 정보 업데이트:', updated);
+      return updated;
+    });
   };
 
   // 전체 설정 함수
   const setUserInfo = (info: UserInfo) => {
+    console.log('사용자 정보 전체 설정:', info);
     setUserInfoState(info);
   };
 
