@@ -48,6 +48,37 @@ export const NutritionAnalysisPage: React.FC = () => {
   const bmiStatus = getBMIStatus(bmi);
   const bmiColor = getBMIColor(bmi);
 
+  // 주간 날짜 범위 계산 (월요일 기준 시작)
+  const getWeekDateRange = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0(일) ~ 6(토)
+
+    // 월요일 기준으로 변환 (월=0, 화=1, ..., 일=6)
+    const mondayBasedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    // 이번 주 월요일 날짜 계산
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - mondayBasedDay);
+
+    // 이번 주 일요일 날짜 계산
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const startMonth = monday.getMonth() + 1;
+    const startDate = monday.getDate();
+    const endMonth = sunday.getMonth() + 1;
+    const endDate = sunday.getDate();
+
+    // 같은 달인 경우
+    if (startMonth === endMonth) {
+      return `${startMonth}월 ${startDate}일 ~ ${endDate}일`;
+    }
+    // 다른 달인 경우
+    return `${startMonth}월 ${startDate}일 ~ ${endMonth}월 ${endDate}일`;
+  };
+
+  const weekDateRange = getWeekDateRange();
+
   // BMI 범위 데이터
   const bmiRanges = [
     { range: '저체중', min: 0, max: 18.5, current: bmi <= 18.5 ? bmi : null },
@@ -372,7 +403,10 @@ export const NutritionAnalysisPage: React.FC = () => {
         {/* 주간 영양소 섭취 현황 */}
         <Card>
           <CardHeader>
-            <CardTitle>주간 영양소 섭취 현황</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>주간 영양소 섭취 현황</CardTitle>
+              <span className="text-xs text-gray-500">기준: {weekDateRange}</span>
+            </div>
           </CardHeader>
           <CardContent>
             <motion.div
@@ -382,7 +416,7 @@ export const NutritionAnalysisPage: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
+                <BarChart
                   data={weeklyData}
                   margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
                 >
@@ -418,61 +452,16 @@ export const NutritionAnalysisPage: React.FC = () => {
                       return [`${value}g (${percentage}%)`, name];
                     }}
                   />
-
-                  {/* 권장 섭취량 기준선 */}
-                  <ReferenceLine
-                    y={80}
-                    stroke="#10b981"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.5}
-                    strokeOpacity={0.5}
-                    label={{ value: '단백질 권장', position: 'right', fill: '#10b981', fontSize: 10 }}
-                  />
-                  <ReferenceLine
-                    y={300}
-                    stroke="#3b82f6"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.5}
-                    strokeOpacity={0.5}
-                    label={{ value: '탄수화물 권장', position: 'right', fill: '#3b82f6', fontSize: 10 }}
-                  />
-                  <ReferenceLine
-                    y={60}
-                    stroke="#f59e0b"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.5}
-                    strokeOpacity={0.5}
-                    label={{ value: '지방 권장', position: 'right', fill: '#f59e0b', fontSize: 10 }}
+                  <Legend
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    iconType="square"
                   />
 
-                  <Line
-                    type="monotone"
-                    dataKey="단백질"
-                    stroke="#10b981"
-                    strokeWidth={3}
-                    dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 7 }}
-                    name="단백질"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="탄수화물"
-                    stroke="#3b82f6"
-                    strokeWidth={3}
-                    dot={{ r: 5, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 7 }}
-                    name="탄수화물"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="지방"
-                    stroke="#f59e0b"
-                    strokeWidth={3}
-                    dot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 7 }}
-                    name="지방"
-                  />
-                </LineChart>
+                  {/* 쌓인 막대 그래프: 단백질, 지방, 탄수화물 순 */}
+                  <Bar dataKey="단백질" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="지방" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="탄수화물" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </motion.div>
 
@@ -484,6 +473,7 @@ export const NutritionAnalysisPage: React.FC = () => {
               transition={{ duration: 0.5 }}
             >
               <div className="grid grid-cols-3 gap-3">
+                {/* 단백질 */}
                 <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
@@ -502,24 +492,7 @@ export const NutritionAnalysisPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-3 h-3 rounded-full bg-[#3b82f6]"></div>
-                    <div className="text-xs font-medium text-gray-600">탄수화물</div>
-                  </div>
-                  <div className="text-lg font-bold text-gray-900">244g</div>
-                  <div className="text-xs text-gray-500 mt-0.5">주간 평균</div>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-200">
-                    <span className="text-xs text-gray-500">권장</span>
-                    <span className="text-xs font-semibold text-gray-700">300g</span>
-                  </div>
-                  <div className="mt-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-blue-600 font-medium">81%</span>
-                      <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">적정</span>
-                    </div>
-                  </div>
-                </div>
+                {/* 지방 */}
                 <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
@@ -535,6 +508,25 @@ export const NutritionAnalysisPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-orange-600 font-medium">110%</span>
                       <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium">과다</span>
+                    </div>
+                  </div>
+                </div>
+                {/* 탄수화물 */}
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-3 h-3 rounded-full bg-[#3b82f6]"></div>
+                    <div className="text-xs font-medium text-gray-600">탄수화물</div>
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">244g</div>
+                  <div className="text-xs text-gray-500 mt-0.5">주간 평균</div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-200">
+                    <span className="text-xs text-gray-500">권장</span>
+                    <span className="text-xs font-semibold text-gray-700">300g</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-blue-600 font-medium">81%</span>
+                      <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">적정</span>
                     </div>
                   </div>
                 </div>
